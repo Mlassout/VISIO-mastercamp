@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+
+{% block content %}
+<section>
+  <div style="margin-bottom:20px">
+    <h1 class="page-heading">Risk map</h1>
+    <p class="page-desc">Geolocated bins around the EFREI Paris campus (Villejuif), coloured by their latest classification.</p>
+  </div>
+
+  <div class="map-grid">
+    <div id="map" class="map-leaflet"></div>
+
+    <div class="loc-card">
+      <div class="loc-card-title">Locations</div>
+      {% for loc in locations %}
+      {% set label = loc.manual_label or loc.auto_label or 'unknown' %}
+      <div class="loc-item">
+        <div>
+          <div class="loc-name">{{ loc.filename }}</div>
+          <div class="loc-coords">{{ '%.5f'|format(loc.latitude) }}, {{ '%.5f'|format(loc.longitude) }}</div>
+        </div>
+        {% if label == 'dirty' %}
+        <span class="badge-sm badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Dirty</span>
+        {% elif label == 'clean' %}
+        <span class="badge-sm badge-clean"><span class="badge-dot badge-dot-clean"></span>Clean</span>
+        {% else %}
+        <span class="badge-sm badge-unlabelled"><span class="badge-dot badge-dot-unlabelled"></span>Unknown</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script type="application/json" id="map-data">{{ {'efrei': efrei, 'markers': markers} | tojson }}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById('map-data').textContent);
+  var efrei = data.efrei, markers = data.markers || [];
+
+  var map = L.map('map', { scrollWheelZoom: true }).setView([efrei.lat, efrei.lng], 15);
+
+  // CARTO Positron — clean, light, minimal-label basemap (free, no API key).
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(map);
+
+  // Keep the view roughly within ~2 km of campus.
+  map.setMaxBounds([[efrei.lat - 0.02, efrei.lng - 0.03], [efrei.lat + 0.02, efrei.lng + 0.03]]);
+  map.setMinZoom(13);
+
+  // EFREI campus pin with a graduation cap.
+  var efreiIcon = L.divIcon({
+    className: 'efrei-pin',
+    html: '<div class="efrei-pin-wrap"><div class="efrei-badge">' +
+          '<img src="{{ url_for('static', filename='img/Logo-Efrei-Blanc.png') }}" class="efrei-logo" alt="EFREI"></div></div>',
+    iconSize: [120, 34],
+    iconAnchor: [60, 17],
+    popupAnchor: [0, -22]
+  });
+  L.marker([efrei.lat, efrei.lng], { icon: efreiIcon, zIndexOffset: 1000 })
+    .addTo(map)
+    .bindPopup('<b>EFREI Paris</b><br>30-32 Av. de la République<br>94800 Villejuif');
+
+  // Bin markers coloured by classification.
+  markers.forEach(function (m) {
+    var dirty = m.label === 'dirty';
+    L.circleMarker([m.lat, m.lng], {
+      radius: 7,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: dirty ? '#cf9a4a' : '#2f6b4f',
+      fillOpacity: 1
+    }).addTo(map).bindPopup('<b>' + m.filename + '</b><br>' +
+      (dirty ? 'Dirty' : (m.label === 'clean' ? 'Clean' : m.label)));
+  });
+
+  // Legend.
+  var legend = L.control({ position: 'topright' });
+  legend.onAdd = function () {
+    var d = L.DomUtil.create('div', 'map-legend');
+    d.innerHTML =
+      '<div class="map-legend-title">Legend</div>' +
+      '<div class="map-legend-item"><span class="map-legend-dot" style="background:#2f6b4f"></span><span class="map-legend-label">Clean</span></div>' +
+      '<div class="map-legend-item"><span class="map-legend-dot" style="background:#cf9a4a"></span><span class="map-legend-label">Dirty</span></div>';
+    return d;
+  };
+  legend.addTo(map);
+})();
+</script>
+{% endblock %}
