@@ -25,9 +25,9 @@
           <div class="loc-coords">{{ '%.5f'|format(loc.latitude) }}, {{ '%.5f'|format(loc.longitude) }}</div>
         </div>
         {% if label == 'dirty' %}
-        <span class="badge-sm badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Dirty</span>
+        <span class="badge-sm badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full</span>
         {% elif label == 'clean' %}
-        <span class="badge-sm badge-clean"><span class="badge-dot badge-dot-clean"></span>Clean</span>
+        <span class="badge-sm badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty</span>
         {% else %}
         <span class="badge-sm badge-unlabelled"><span class="badge-dot badge-dot-unlabelled"></span>Unknown</span>
         {% endif %}
@@ -81,7 +81,7 @@
       fillColor: dirty ? '#cf9a4a' : '#2f6b4f',
       fillOpacity: 1
     }).addTo(map).bindPopup('<b>' + m.filename + '</b><br>' +
-      (dirty ? 'Dirty' : (m.label === 'clean' ? 'Clean' : m.label)));
+      (dirty ? 'Full' : (m.label === 'clean' ? 'Empty' : m.label)));
   });
 
   // Legend.
@@ -90,8 +90,8 @@
     var d = L.DomUtil.create('div', 'map-legend');
     d.innerHTML =
       '<div class="map-legend-title">Legend</div>' +
-      '<div class="map-legend-item"><span class="map-legend-dot" style="background:#2f6b4f"></span><span class="map-legend-label">Clean</span></div>' +
-      '<div class="map-legend-item"><span class="map-legend-dot" style="background:#cf9a4a"></span><span class="map-legend-label">Dirty</span></div>';
+      '<div class="map-legend-item"><span class="map-legend-dot" style="background:#2f6b4f"></span><span class="map-legend-label">Empty</span></div>' +
+      '<div class="map-legend-item"><span class="map-legend-dot" style="background:#cf9a4a"></span><span class="map-legend-label">Full</span></div>';
     return d;
   };
   legend.addTo(map);

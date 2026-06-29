@@ -13,12 +13,12 @@
       <div class="card-note">All uploaded images</div>
     </div>
     <div class="card">
-      <div class="card-label">Clean</div>
+      <div class="card-label">Empty</div>
       <div class="card-value card-value-green">{{ stats.clean_pct }}%</div>
-      <div class="card-note">{{ stats.clean }} images labelled clean</div>
+      <div class="card-note">{{ stats.clean }} images labelled empty</div>
     </div>
     <div class="card">
-      <div class="card-label">Dirty</div>
+      <div class="card-label">Full</div>
       <div class="card-value card-value-amber">{{ stats.dirty_pct }}%</div>
       <div class="card-note">{{ stats.dirty }} flagged full / overflowing</div>
     </div>
@@ -76,9 +76,9 @@
           <td class="td-date">{{ img.upload_date[:10] }}</td>
           <td>
             {% if img.manual_label == 'clean' or (img.manual_label is none and img.auto_label == 'clean') %}
-            <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Clean</span>
+            <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty</span>
             {% elif img.manual_label == 'dirty' or (img.manual_label is none and img.auto_label == 'dirty') %}
-            <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Dirty</span>
+            <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full</span>
             {% else %}
             <span class="badge badge-unlabelled"><span class="badge-dot badge-dot-unlabelled"></span>Unlabelled</span>
             {% endif %}

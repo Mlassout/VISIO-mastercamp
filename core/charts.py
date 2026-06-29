@@ -37,7 +37,7 @@ def class_distribution_png(clean_count: int, dirty_count: int) -> bytes:
     _style_ax(ax)
 
     bars = ax.bar(
-        ["Clean", "Dirty"],
+        ["Empty", "Full"],
         [clean_count, dirty_count],
         color=[GREEN, AMBER],
         width=0.45,

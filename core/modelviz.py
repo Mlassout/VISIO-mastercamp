@@ -109,7 +109,7 @@ def confusion_matrix_png(meta) -> bytes:
     fig, ax = plt.subplots(figsize=(4.2, 3.0), dpi=100)
     fig.patch.set_facecolor(BG)
     ax.imshow(cm, cmap="Greens", aspect="auto")
-    labels = ["Clean", "Dirty"]
+    labels = ["Empty", "Full"]
     ax.set_xticks([0, 1]); ax.set_xticklabels(labels)
     ax.set_yticks([0, 1]); ax.set_yticklabels(labels)
     ax.set_xlabel("Predicted", color=LABEL, fontsize=10)
@@ -183,9 +183,9 @@ def feature_distributions_png() -> bytes:
         col = X[:, idx]
         rng = (float(col.min()), float(col.max()))
         ax.hist(col[clean_mask], bins=12, range=rng, color=GREEN, alpha=0.55,
-                label="clean", zorder=3)
+                label="empty", zorder=3)
         ax.hist(col[dirty_mask], bins=12, range=rng, color=AMBER, alpha=0.55,
-                label="dirty", zorder=3)
+                label="full", zorder=3)
         ax.set_title(KEYS[idx], fontsize=10, color=TITLE)
         ax.tick_params(labelsize=8, colors=TICK)
     axes[0, 0].legend(fontsize=8, frameon=False)
@@ -206,8 +206,8 @@ def pca_scatter_png() -> bytes:
     fig.patch.set_facecolor(BG)
     _style_ax(ax)
     groups = [("nolabel", GREY, 10, 0.5, "no_label"),
-              ("clean", GREEN, 26, 0.9, "clean"),
-              ("dirty", AMBER, 26, 0.9, "dirty")]
+              ("clean", GREEN, 26, 0.9, "empty"),
+              ("dirty", AMBER, 26, 0.9, "full")]
     for key, color, size, alpha, lab in groups:
         m = labels == key
         if m.any():

@@ -46,7 +46,7 @@
           <option value="">— choose an image —</option>
           {% for im in images %}
           <option value="{{ im.id }}" {% if image and im.id == image.id %}selected{% endif %}>
-            {{ im.filename }}{% if im.manual_label %} · {{ im.manual_label }}{% elif im.auto_label %} · auto:{{ im.auto_label }}{% else %} · unlabelled{% endif %}
+            {{ im.filename }}{% if im.manual_label %} · {{ 'Full' if im.manual_label == 'dirty' else 'Empty' }}{% elif im.auto_label %} · auto:{{ 'Full' if im.auto_label == 'dirty' else 'Empty' }}{% else %} · unlabelled{% endif %}
           </option>
           {% endfor %}
         </select>
@@ -113,9 +113,9 @@
         <div class="prediction-row">
           <span class="feature-key">Rule classification</span>
           {% if image.auto_label == 'dirty' %}
-          <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Dirty · {{ (image.confidence * 100)|int }}%</span>
+          <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full · {{ (image.confidence * 100)|int }}%</span>
           {% else %}
-          <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Clean · {{ (image.confidence * 100)|int }}%</span>
+          <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty · {{ (image.confidence * 100)|int }}%</span>
           {% endif %}
         </div>
         {% if image.rule_reason %}
@@ -127,9 +127,9 @@
         <div class="feature-row" style="margin-top:11px">
           <span class="feature-key">ML model (reference)</span>
           {% if ml_label == 'dirty' %}
-          <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Dirty · {{ (ml_conf * 100)|int }}%</span>
+          <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full · {{ (ml_conf * 100)|int }}%</span>
           {% else %}
-          <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Clean · {{ (ml_conf * 100)|int }}%</span>
+          <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty · {{ (ml_conf * 100)|int }}%</span>
           {% endif %}
         </div>
         {% endif %}
@@ -145,15 +145,15 @@
         <div class="label-btns">
           <form method="post" action="{{ url_for('annotate_submit', id=image.id) }}" style="display:contents">
             <input type="hidden" name="label" value="clean">
-            <button type="submit" class="btn-label {% if image.manual_label == 'clean' %}btn-label-clean-active{% endif %}">Clean</button>
+            <button type="submit" class="btn-label {% if image.manual_label == 'clean' %}btn-label-clean-active{% endif %}">Empty</button>
           </form>
           <form method="post" action="{{ url_for('annotate_submit', id=image.id) }}" style="display:contents">
             <input type="hidden" name="label" value="dirty">
-            <button type="submit" class="btn-label {% if image.manual_label == 'dirty' %}btn-label-dirty-active{% endif %}">Dirty</button>
+            <button type="submit" class="btn-label {% if image.manual_label == 'dirty' %}btn-label-dirty-active{% endif %}">Full</button>
           </form>
         </div>
         {% if image.manual_label %}
-        <div class="rule-reason">Saved label: <strong>{{ image.manual_label }}</strong></div>
+        <div class="rule-reason">Saved label: <strong>{{ 'Full' if image.manual_label == 'dirty' else 'Empty' }}</strong></div>
         {% endif %}
       </div>
     </div>

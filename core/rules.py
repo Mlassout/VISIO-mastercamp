@@ -40,10 +40,10 @@ def classify(features: dict, config: dict = None):
     if score >= 2:
         label = "dirty"
         confidence = round(0.5 + 0.16 * score, 2)  # 2->0.82, 3->0.98
-        reason = "Dirty: " + ", ".join(fired)
+        reason = "Full: " + ", ".join(fired)
     else:
         label = "clean"
         confidence = round(0.6 + 0.2 * (1 - score), 2)  # 0->0.80, 1->0.60
-        reason = "Clean: " + (", ".join(fired) if fired else "no rules triggered")
+        reason = "Empty: " + (", ".join(fired) if fired else "no rules triggered")
 
     return label, min(confidence, 0.99), reason
