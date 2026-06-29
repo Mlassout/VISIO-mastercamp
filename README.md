@@ -1,3 +1,5 @@
+![banner](static/img/banner.png)
+
 # BinSight
 
 Web application for monitoring public waste bins. Users upload bin photos; the
