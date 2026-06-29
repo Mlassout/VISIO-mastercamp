@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div style="margin-bottom:24px">
+    <h1 class="page-heading">Model training</h1>
+    <p class="page-desc">Features, training data, validation results and explainability for the bin classifier.</p>
+  </div>
+
+  {% if not meta %}
+  <div class="empty-state">No trained model yet. Run <code>python train.py</code> to train and populate this page.</div>
+  {% else %}
+
+  <!-- KPI ROW -->
+  <div class="kpi-grid">
+    <div class="card">
+      <div class="card-label">Model</div>
+      <div class="card-value" style="font-size:24px">{{ meta.model_name }}</div>
+      <div class="card-note">scaler + classifier pipeline</div>
+    </div>
+    <div class="card">
+      <div class="card-label">CV accuracy</div>
+      <div class="card-value card-value-green">{{ (meta.cv_accuracy * 100)|round(1) }}%</div>
+      <div class="card-note">5-fold, ± {{ (meta.cv_std * 100)|round(1) }}% (labeled only)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Training samples</div>
+      <div class="card-value">{{ meta.n_train_total }}</div>
+      <div class="card-note">{{ meta.n_labeled }} labeled + {{ meta.n_pseudo }} pseudo-labeled</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Features / image</div>
+      <div class="card-value">{{ meta.n_features }}</div>
+      <div class="card-note">handcrafted (colour, texture, edges)</div>
+    </div>
+  </div>
+
+  <!-- DATA COMPOSITION -->
+  <div class="kpi-grid">
+    <div class="card">
+      <div class="card-label">Labeled empty</div>
+      <div class="card-value card-value-green">{{ meta.n_clean }}</div>
+      <div class="card-note">ground-truth empty bins</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Labeled full</div>
+      <div class="card-value card-value-amber">{{ meta.n_dirty }}</div>
+      <div class="card-note">ground-truth full bins</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Unlabeled pool</div>
+      <div class="card-value">{{ meta.n_unlabeled }}</div>
+      <div class="card-note">no_label images available</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pseudo-labeled</div>
+      <div class="card-value">{{ meta.n_pseudo }}</div>
+      <div class="card-note">≥ {{ (meta.pseudo_confidence * 100)|int }}% conf · {{ meta.n_pseudo_clean }} empty / {{ meta.n_pseudo_dirty }} full</div>
+    </div>
+  </div>
+
+  <!-- VALIDATION -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Model comparison (cross-validated)</div>
+      <div class="chart-subtitle">charts/model/cv_scores.png</div>
+      <img class="chart-img" src="{{ url_for('chart_model', chart='cv_scores') }}" alt="CV scores">
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Confusion matrix (out-of-fold)</div>
+      <div class="chart-subtitle">charts/model/confusion_matrix.png</div>
+      <img class="chart-img" src="{{ url_for('chart_model', chart='confusion_matrix') }}" alt="Confusion matrix">
+    </div>
+  </div>
+
+  <!-- CLASSIFICATION REPORT -->
+  <div class="table-card" style="margin-bottom:20px">
+    <div class="table-header">
+      <div class="table-header-title">Classification report (honest, out-of-fold)</div>
+      <span class="annotate-progress">best: {{ meta.model_name }}</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1-score</th><th>Support</th></tr>
+      </thead>
+      <tbody>
+        {% for cls, disp in [('clean', 'Empty'), ('dirty', 'Full')] %}
+        <tr>
+          <td class="td-filename">{{ disp }}</td>
+          <td class="td-date">{{ (meta.report[cls].precision * 100)|round(1) }}%</td>
+          <td class="td-date">{{ (meta.report[cls].recall * 100)|round(1) }}%</td>
+          <td class="td-date">{{ (meta.report[cls]['f1-score'] * 100)|round(1) }}%</td>
+          <td class="td-date">{{ meta.report[cls].support|int }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td class="td-filename">accuracy</td>
+          <td class="td-date">—</td>
+          <td class="td-date">—</td>
+          <td class="td-date">{{ (meta.report.accuracy * 100)|round(1) }}%</td>
+          <td class="td-date">{{ meta.n_labeled }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EXPLAINABILITY -->
+  <div class="charts-grid" style="grid-template-columns:1fr 1fr">
+    <div class="chart-card">
+      <div class="chart-title">Feature importance (explainability)</div>
+      <div class="chart-subtitle">charts/model/feature_importance.png</div>
+      <img class="chart-img" src="{{ url_for('chart_model', chart='feature_importance') }}" alt="Feature importance">
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Feature space (PCA projection)</div>
+      <div class="chart-subtitle">charts/model/pca.png</div>
+      <img class="chart-img" src="{{ url_for('chart_model', chart='pca') }}" alt="PCA scatter">
+    </div>
+  </div>
+
+  <!-- FEATURE DISTRIBUTIONS -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-title">Most discriminative features: empty vs full</div>
+    <div class="chart-subtitle">charts/model/feature_distributions.png</div>
+    <img class="chart-img" src="{{ url_for('chart_model', chart='feature_distributions') }}" alt="Feature distributions">
+  </div>
+
+  <p class="page-desc" style="text-align:right">Last trained: {{ meta.trained_at }}</p>
+
+  {% endif %}
+</section>
+{% endblock %}

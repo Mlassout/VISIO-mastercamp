@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div style="margin-bottom:24px">
+    <h1 class="page-heading">Dashboard</h1>
+    <p class="page-desc">Overview of bin imagery and classification status across the network.</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="card">
+      <div class="card-label">Total images</div>
+      <div class="card-value">{{ '{:,}'.format(stats.total) }}</div>
+      <div class="card-note">All uploaded images</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Empty</div>
+      <div class="card-value card-value-green">{{ stats.clean_pct }}%</div>
+      <div class="card-note">{{ stats.clean }} images labelled empty</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Full</div>
+      <div class="card-value card-value-amber">{{ stats.dirty_pct }}%</div>
+      <div class="card-note">{{ stats.dirty }} flagged full / overflowing</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Awaiting annotation</div>
+      <div class="card-value">{{ stats.unlabelled }}</div>
+      <div class="card-note">In the review queue</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Classification distribution</div>
+      <div class="chart-subtitle"></div>
+      <img class="chart-img" src="{{ url_for('chart_class_distribution') }}" alt="Classification distribution">
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Uploads over time</div>
+      <div class="chart-subtitle"></div>
+      <img class="chart-img" src="{{ url_for('chart_uploads_over_time') }}" alt="Uploads over time">
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-title">File size distribution</div>
+    <div class="chart-subtitle"></div>
+    <img class="chart-img" src="{{ url_for('chart_file_size_distribution') }}" alt="File size distribution">
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-header-title">Recent uploads</div>
+      <a href="{{ url_for('annotate') }}" class="table-header-link">Review queue &rarr;</a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Filename</th>
+          <th>Uploaded</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for img in recent %}
+        <tr>
+          <td>
+            <div class="thumb">
+              {% if img.filename %}
+              <img src="{{ url_for('static', filename='uploads/' + img.filename) }}" alt="" onerror="this.style.display='none'">
+              {% endif %}
+            </div>
+          </td>
+          <td class="td-filename">{{ img.filename }}</td>
+          <td class="td-date">{{ img.upload_date[:10] }}</td>
+          <td>
+            {% if img.manual_label == 'clean' or (img.manual_label is none and img.auto_label == 'clean') %}
+            <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty</span>
+            {% elif img.manual_label == 'dirty' or (img.manual_label is none and img.auto_label == 'dirty') %}
+            <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full</span>
+            {% else %}
+            <span class="badge badge-unlabelled"><span class="badge-dot badge-dot-unlabelled"></span>Unlabelled</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

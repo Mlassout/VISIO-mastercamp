@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <div style="margin-bottom:24px">
+    <h1 class="page-heading">Upload &amp; annotate</h1>
+    <p class="page-desc">Upload a new bin photo or pick an existing one. Its stats, model preview and predictions are shown below — then assign a ground-truth label.</p>
+  </div>
+
+  <!-- ============ IMAGE SOURCE: UPLOAD OR SELECT ============ -->
+  <div class="source-grid">
+    <div class="upload-card">
+      <div class="meta-label" style="margin-bottom:14px">Upload a new image</div>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('upload') }}">
+        <label for="wdp-file" class="upload-dropzone" id="wdp-dropzone">
+          <div class="upload-dropzone-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f6b4f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3 L12 15"/>
+              <path d="M6 11 L12 17 L18 11"/>
+              <path d="M5 20 L19 20"/>
+            </svg>
+          </div>
+          <div class="upload-dropzone-text">Choose an image to upload</div>
+          <div class="upload-dropzone-hint">JPG or PNG · max 10 MB</div>
+        </label>
+
+        <div class="upload-preview" id="wdp-preview" style="display:none">
+          <img id="wdp-preview-img" src="" alt="preview">
+          <button type="button" class="upload-cancel" id="wdp-cancel" aria-label="Remove selected image">&times;</button>
+        </div>
+
+        <input type="file" name="file" accept="image/png,image/jpeg" class="file-input-hidden" id="wdp-file" required>
+
+        <div class="upload-file-row">
+          <span class="upload-file-name" id="wdp-filename">No file selected</span>
+          <label for="wdp-file" class="upload-file-choose">Choose file</label>
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top:18px">Upload &amp; extract features</button>
+      </form>
+    </div>
+
+    <div class="upload-card">
+      <div class="meta-label" style="margin-bottom:14px">Or select an existing image</div>
+      <form method="get" action="{{ url_for('annotate') }}">
+        <select name="id" class="rule-input" onchange="this.form.submit()">
+          <option value="">— choose an image —</option>
+          {% for im in images %}
+          <option value="{{ im.id }}" {% if image and im.id == image.id %}selected{% endif %}>
+            {{ im.filename }}{% if im.manual_label %} · {{ 'Full' if im.manual_label == 'dirty' else 'Empty' }}{% elif im.auto_label %} · auto:{{ 'Full' if im.auto_label == 'dirty' else 'Empty' }}{% else %} · unlabelled{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn-nav" style="margin-top:12px;width:100%">Load image</button>
+      </form>
+      <div class="source-count">{{ images|length }} image{{ '' if images|length == 1 else 's' }} in the database</div>
+    </div>
+  </div>
+
+  <!-- ============ CURRENT IMAGE ============ -->
+  <div class="annotate-header">
+    <div class="table-header-title" style="font-size:16px">Current image</div>
+    {% if image %}<div class="annotate-progress">#{{ image.id }} · image {{ current_pos }} of {{ total_count }}</div>{% endif %}
+  </div>
+
+  {% if image %}
+  <div class="annotate-grid">
+    <!-- left: original + normalized -->
+    <div class="annotate-left">
+      <div class="annotate-img-card">
+        <div class="annotate-img-wrap">
+          <img src="{{ url_for('static', filename='uploads/' + image.filename) }}" alt="{{ image.filename }}" onerror="this.style.display='none'">
+          {% if image.filename %}
+          <div class="annotate-img-filename">{{ image.filename }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="annotate-panel">
+        <div class="meta-label">Normalized view (model input)</div>
+        <img class="chart-img" src="{{ url_for('image_normalized', id=image.id) }}" alt="Normalized view">
+        <div class="rule-reason">Grayscale, contrast-normalized — the representation the classifier works from.</div>
+      </div>
+    </div>
+
+    <!-- right: stats, predictions, label -->
+    <div class="annotate-side">
+      <div class="annotate-panel">
+        <div class="meta-label">Features</div>
+        <div class="feature-row">
+          <span class="feature-key">Dimensions</span>
+          <span class="feature-val">{{ image.width }} × {{ image.height }}</span>
+        </div>
+        <div class="feature-row">
+          <span class="feature-key">File size</span>
+          <span class="feature-val">{{ image.file_size_kb }} KB</span>
+        </div>
+        <div class="feature-row">
+          <span class="feature-key">Mean colour</span>
+          <span class="feature-color-wrap">
+            <span class="feature-swatch" style="background:rgb({{ image.mean_r|int }},{{ image.mean_g|int }},{{ image.mean_b|int }})"></span>
+            <span class="feature-val">#{{ '%02X%02X%02X' % (image.mean_r|int, image.mean_g|int, image.mean_b|int) }}</span>
+          </span>
+        </div>
+        <div class="feature-row">
+          <span class="feature-key">Contrast</span>
+          <span class="feature-val">{{ image.contrast }}</span>
+        </div>
+        <div class="feature-row">
+          <span class="feature-key">Edge density</span>
+          <span class="feature-val">{{ image.edge_density }}</span>
+        </div>
+
+        {% if image.auto_label %}
+        <div class="prediction-row">
+          <span class="feature-key">Rule classification</span>
+          {% if image.auto_label == 'dirty' %}
+          <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full · {{ (image.confidence * 100)|int }}%</span>
+          {% else %}
+          <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty · {{ (image.confidence * 100)|int }}%</span>
+          {% endif %}
+        </div>
+        {% if image.rule_reason %}
+        <div class="rule-reason">{{ image.rule_reason }}</div>
+        {% endif %}
+        {% endif %}
+
+        {% if ml_label %}
+        <div class="feature-row" style="margin-top:11px">
+          <span class="feature-key">ML model (reference)</span>
+          {% if ml_label == 'dirty' %}
+          <span class="badge badge-dirty"><span class="badge-dot badge-dot-dirty"></span>Full · {{ (ml_conf * 100)|int }}%</span>
+          {% else %}
+          <span class="badge badge-clean"><span class="badge-dot badge-dot-clean"></span>Empty · {{ (ml_conf * 100)|int }}%</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="annotate-panel">
+        <div class="meta-label">Colour &amp; luminance histogram</div>
+        <img class="chart-img" src="{{ url_for('chart_histogram', id=image.id) }}" alt="Histogram for {{ image.filename }}">
+      </div>
+
+      <div class="annotate-panel">
+        <div class="meta-label">Your label</div>
+        <div class="label-btns">
+          <form method="post" action="{{ url_for('annotate_submit', id=image.id) }}" style="display:contents">
+            <input type="hidden" name="label" value="clean">
+            <button type="submit" class="btn-label {% if image.manual_label == 'clean' %}btn-label-clean-active{% endif %}">Empty</button>
+          </form>
+          <form method="post" action="{{ url_for('annotate_submit', id=image.id) }}" style="display:contents">
+            <input type="hidden" name="label" value="dirty">
+            <button type="submit" class="btn-label {% if image.manual_label == 'dirty' %}btn-label-dirty-active{% endif %}">Full</button>
+          </form>
+        </div>
+        {% if image.manual_label %}
+        <div class="rule-reason">Saved label: <strong>{{ 'Full' if image.manual_label == 'dirty' else 'Empty' }}</strong></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">No image selected — upload one or pick from the dropdown above.</div>
+  {% endif %}
+</section>
+
+<!-- Allowed exception: tiny vanilla snippet for upload image preview (mirrors the mockup's onFile handler). -->
+<script>
+(function () {
+  var input = document.getElementById('wdp-file');
+  if (!input) return;
+  var hex = function (n) { return n.toString(16).padStart(2, '0').toUpperCase(); };
+
+  input.addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f);
+    var img = new Image();
+    img.onload = function () {
+      document.getElementById('wdp-preview-img').src = url;
+      document.getElementById('wdp-preview').style.display = 'flex';
+      document.getElementById('wdp-dropzone').style.display = 'none';
+      document.getElementById('wdp-filename').textContent = f.name;
+    };
+    img.src = url;
+  });
+
+  // Cancel the selected image so another can be chosen.
+  document.getElementById('wdp-cancel').addEventListener('click', function () {
+    input.value = '';
+    document.getElementById('wdp-preview-img').src = '';
+    document.getElementById('wdp-preview').style.display = 'none';
+    document.getElementById('wdp-dropzone').style.display = '';
+    document.getElementById('wdp-filename').textContent = 'No file selected';
+  });
+})();
+</script>
+{% endblock %}
